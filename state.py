@@ -1,3 +1,5 @@
+import random
+
 import pygame
 from resources import ImageResources, SoundResource
 from pygame.locals import *
@@ -62,6 +64,12 @@ class Bird:
 
 
 class State:
+    # Constants
+    FPS = 30
+    SCREEN_WIDTH = 288
+    SCREEN_HEIGHT = 512
+    PIPE_GAP_SIZE = 100  # gap between upper and lower part of pipe
+    BASE_Y = SCREEN_HEIGHT * 0.79
 
     def __init__(self, images: ImageResources, sounds: SoundResource):
         # Resources
@@ -73,6 +81,8 @@ class State:
         self.lower_pipes = []
         self.initialize()
         self.bird = Bird(self)
+        # Constants
+        self.pipe_height = images.pipe[0].get_height()
 
     def initialize(self):
         # Random UI theme
@@ -89,3 +99,13 @@ class State:
 
     def increase_score(self):
         self.score += 1
+
+    def add_random_pipe(self, x=0):
+        """returns a randomly generated pipe"""
+        # y of gap between upper and lower pipe
+        gap_y = random.randrange(0, int(State.BASE_Y * 0.6 - State.PIPE_GAP_SIZE))
+        gap_y += int(State.BASE_Y * 0.2)
+
+        pipe_x = (State.SCREEN_WIDTH + 10) if x == 0 else x
+        self.upper_pipes.append({'x': pipe_x, 'y': gap_y - self.pipe_height})
+        self.lower_pipes.append({'x': pipe_x, 'y': gap_y + State.PIPE_GAP_SIZE})

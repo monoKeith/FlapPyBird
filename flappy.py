@@ -6,13 +6,6 @@ from resources import ImageResources, SoundResource
 from itertools import cycle
 from pygame.locals import *
 
-# Constants
-FPS = 30
-SCREEN_WIDTH = 288
-SCREEN_HEIGHT = 512
-PIPE_GAP_SIZE = 100  # gap between upper and lower part of pipe
-BASE_Y = SCREEN_HEIGHT * 0.79
-
 try:
     xrange
 except NameError:
@@ -22,7 +15,7 @@ except NameError:
 pygame.init()
 pygame.display.set_caption('Flappy Bird')
 FPS_CLOCK = pygame.time.Clock()
-SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+SCREEN = pygame.display.set_mode((State.SCREEN_WIDTH, State.SCREEN_HEIGHT))
 
 # Initialize resources
 images = ImageResources()
@@ -64,11 +57,11 @@ def show_welcome_animation():
     # iterator used to change player_index after every 5th iteration
     loop_iter = 0
 
-    player_x = int(SCREEN_WIDTH * 0.2)
-    player_y = int((SCREEN_HEIGHT - images.player[0].get_height()) / 2)
+    player_x = int(State.SCREEN_WIDTH * 0.2)
+    player_y = int((State.SCREEN_HEIGHT - images.player[0].get_height()) / 2)
 
-    message_x = int((SCREEN_WIDTH - images.message.get_width()) / 2)
-    message_y = int(SCREEN_HEIGHT * 0.12)
+    message_x = int((State.SCREEN_WIDTH - images.message.get_width()) / 2)
+    message_y = int(State.SCREEN_HEIGHT * 0.12)
 
     base_x = 0
     # amount by which base can maximum shift to left
@@ -102,33 +95,26 @@ def show_welcome_animation():
         SCREEN.blit(images.background, (0, 0))
         SCREEN.blit(images.player[player_index], (player_x, player_y + player_shm_vals['val']))
         SCREEN.blit(images.message, (message_x, message_y))
-        SCREEN.blit(images.base, (base_x, BASE_Y))
+        SCREEN.blit(images.base, (base_x, State.BASE_Y))
 
         pygame.display.update()
-        FPS_CLOCK.tick(FPS)
+        FPS_CLOCK.tick(State.FPS)
 
 
 def main_game(movement_info):
     player_index = 0
     loop_iter = 0
     player_index_gen = movement_info['player_index_gen']
-    player_x, state.bird.y = int(SCREEN_WIDTH * 0.2), movement_info['player_y']
+    player_x, state.bird.y = int(State.SCREEN_WIDTH * 0.2), movement_info['player_y']
 
     base_x = movement_info['base_x']
     base_shift = images.base.get_width() - images.background.get_width()
 
-    # get 2 new pipes to add to upper_pipes lower_pipes list
-    new_pipe1 = get_random_pipe()
-    new_pipe2 = get_random_pipe()
+    # add 2 random pipes
+    state.add_random_pipe(State.SCREEN_WIDTH + 200)
+    state.add_random_pipe(State.SCREEN_WIDTH + 200 + (State.SCREEN_WIDTH / 2))
 
-    # list of upper pipes
-    state.upper_pipes.append({'x': SCREEN_WIDTH + 200, 'y': new_pipe1[0]['y']})
-    state.upper_pipes.append({'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2), 'y': new_pipe2[0]['y']})
-    # list of lower pipes
-    state.lower_pipes.append({'x': SCREEN_WIDTH + 200, 'y': new_pipe1[1]['y']})
-    state.lower_pipes.append({'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2), 'y': new_pipe2[1]['y']})
-
-    dt = FPS_CLOCK.tick(FPS) / 1000
+    dt = FPS_CLOCK.tick(State.FPS) / 1000
     pipe_vel_x = -128 * dt
 
     while True:
@@ -171,7 +157,7 @@ def main_game(movement_info):
         base_x = -((-base_x + 100) % base_shift)
 
         player_height = images.player[player_index].get_height()
-        state.bird.y += min(state.bird.get_velocity_y(), BASE_Y - state.bird.get_y() - player_height)
+        state.bird.y += min(state.bird.get_velocity_y(), State.BASE_Y - state.bird.get_y() - player_height)
 
         # Update Pipes
         # move pipes to left
@@ -180,9 +166,7 @@ def main_game(movement_info):
             prev_l_pipe['x'] += pipe_vel_x
         # add new pipe when first pipe is about to touch left of screen
         if 3 > len(state.upper_pipes) > 0 and 0 < state.upper_pipes[0]['x'] < 5:
-            new_pipe = get_random_pipe()
-            state.upper_pipes.append(new_pipe[0])
-            state.lower_pipes.append(new_pipe[1])
+            state.add_random_pipe()
         # remove first pipe if its out of the screen
         if len(state.upper_pipes) > 0 and state.upper_pipes[0]['x'] < -images.pipe[0].get_width():
             state.upper_pipes.pop(0)
@@ -195,7 +179,7 @@ def main_game(movement_info):
             SCREEN.blit(images.pipe[0], (prev_u_pipe['x'], prev_u_pipe['y']))
             SCREEN.blit(images.pipe[1], (prev_l_pipe['x'], prev_l_pipe['y']))
         # Base
-        SCREEN.blit(images.base, (base_x, BASE_Y))
+        SCREEN.blit(images.base, (base_x, State.BASE_Y))
         # Score
         show_score(state.get_score())
         # Bird: limit rotation of bird within 20
@@ -204,13 +188,13 @@ def main_game(movement_info):
         SCREEN.blit(player_surface, (state.bird.get_x(), state.bird.get_y()))
         # Done
         pygame.display.update()
-        FPS_CLOCK.tick(FPS)
+        FPS_CLOCK.tick(State.FPS)
 
 
 def show_game_over_screen(crash_info):
     """crashes the player down and shows gameover image"""
     score = crash_info['score']
-    player_x = SCREEN_WIDTH * 0.2
+    player_x = State.SCREEN_WIDTH * 0.2
     player_y = crash_info['y']
     player_height = images.player[0].get_height()
     player_vel_y = crash_info['player_vel_y']
@@ -233,12 +217,12 @@ def show_game_over_screen(crash_info):
                 pygame.quit()
                 sys.exit()
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
-                if player_y + player_height >= BASE_Y - 1:
+                if player_y + player_height >= State.BASE_Y - 1:
                     return
 
         # player y shift
-        if player_y + player_height < BASE_Y - 1:
-            player_y += min(player_vel_y, BASE_Y - player_y - player_height)
+        if player_y + player_height < State.BASE_Y - 1:
+            player_y += min(player_vel_y, State.BASE_Y - player_y - player_height)
 
         # player velocity change
         if player_vel_y < 15:
@@ -256,14 +240,14 @@ def show_game_over_screen(crash_info):
             SCREEN.blit(images.pipe[0], (u_pipe['x'], u_pipe['y']))
             SCREEN.blit(images.pipe[1], (l_pipe['x'], l_pipe['y']))
 
-        SCREEN.blit(images.base, (basex, BASE_Y))
+        SCREEN.blit(images.base, (basex, State.BASE_Y))
         show_score(score)
 
         player_surface = pygame.transform.rotate(images.player[1], player_rot)
         SCREEN.blit(player_surface, (player_x, player_y))
         SCREEN.blit(images.game_over, (50, 180))
 
-        FPS_CLOCK.tick(FPS)
+        FPS_CLOCK.tick(State.FPS)
         pygame.display.update()
 
 
@@ -278,20 +262,6 @@ def player_shm(player_shm_val):
         player_shm_val['val'] -= 1
 
 
-def get_random_pipe():
-    """returns a randomly generated pipe"""
-    # y of gap between upper and lower pipe
-    gap_y = random.randrange(0, int(BASE_Y * 0.6 - PIPE_GAP_SIZE))
-    gap_y += int(BASE_Y * 0.2)
-    pipe_height = images.pipe[0].get_height()
-    pipe_x = SCREEN_WIDTH + 10
-
-    return [
-        {'x': pipe_x, 'y': gap_y - pipe_height},  # upper pipe
-        {'x': pipe_x, 'y': gap_y + PIPE_GAP_SIZE},  # lower pipe
-    ]
-
-
 def show_score(score):
     """displays score in center of screen"""
     score_digits = [int(x) for x in list(str(score))]
@@ -300,10 +270,10 @@ def show_score(score):
     for digit in score_digits:
         total_width += images.get_number(digit).get_width()
 
-    x_offset = (SCREEN_WIDTH - total_width) / 2
+    x_offset = (State.SCREEN_WIDTH - total_width) / 2
 
     for digit in score_digits:
-        SCREEN.blit(images.get_number(digit), (x_offset, SCREEN_HEIGHT * 0.1))
+        SCREEN.blit(images.get_number(digit), (x_offset, State.SCREEN_HEIGHT * 0.1))
         x_offset += images.get_number(digit).get_width()
 
 
@@ -314,7 +284,7 @@ def check_crash(player, upper_pipes, lower_pipes):
     player['h'] = images.player[0].get_height()
 
     # if player crashes into ground
-    if player['y'] + player['h'] >= BASE_Y - 1:
+    if player['y'] + player['h'] >= State.BASE_Y - 1:
         return [True, True]
     else:
 
