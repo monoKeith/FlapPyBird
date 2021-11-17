@@ -13,31 +13,32 @@ BACKGROUNDS_LIST = (
 PLAYERS_LIST = (
     # red bird
     (
-        'assets/sprites/redbird-upflap.png',
-        'assets/sprites/redbird-midflap.png',
-        'assets/sprites/redbird-downflap.png',
+        '%s/redbird-upflap.png' % PATH_PREFIX_IMG,
+        '%s/redbird-midflap.png' % PATH_PREFIX_IMG,
+        '%s/redbird-downflap.png' % PATH_PREFIX_IMG,
     ),
     # blue bird
     (
-        'assets/sprites/bluebird-upflap.png',
-        'assets/sprites/bluebird-midflap.png',
-        'assets/sprites/bluebird-downflap.png',
+        '%s/bluebird-upflap.png' % PATH_PREFIX_IMG,
+        '%s/bluebird-midflap.png' % PATH_PREFIX_IMG,
+        '%s/bluebird-downflap.png' % PATH_PREFIX_IMG,
     ),
     # yellow bird
     (
-        'assets/sprites/yellowbird-upflap.png',
-        'assets/sprites/yellowbird-midflap.png',
-        'assets/sprites/yellowbird-downflap.png',
+        '%s/yellowbird-upflap.png' % PATH_PREFIX_IMG,
+        '%s/yellowbird-midflap.png' % PATH_PREFIX_IMG,
+        '%s/yellowbird-downflap.png' % PATH_PREFIX_IMG,
     ),
 )
 
 # list of pipes
 PIPES_LIST = (
-    'assets/sprites/pipe-green.png',
-    'assets/sprites/pipe-red.png',
+    '%s/pipe-green.png' % PATH_PREFIX_IMG,
+    '%s/pipe-red.png' % PATH_PREFIX_IMG,
 )
 
-class PygameResources():
+
+class ImageResources:
 
     def __init__(self):
         # numbers sprites for score display

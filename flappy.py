@@ -2,7 +2,7 @@ import pygame
 import random
 import sys
 from state import State
-from resources import PygameResources
+from resources import ImageResources
 from itertools import cycle
 from pygame.locals import *
 
@@ -31,7 +31,7 @@ FPS_CLOCK = pygame.time.Clock()
 SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 # Initialize resources
-resources = PygameResources()
+images = ImageResources()
 
 
 def main():
@@ -47,21 +47,21 @@ def main():
 
     while True:
         # select random resources
-        resources.random_background()
-        resources.random_player()
-        resources.random_pipe()
+        images.random_background()
+        images.random_player()
+        images.random_pipe()
 
         # hitmask for pipes
         HITMASKS['pipe'] = (
-            get_hit_mask(resources.pipe[0]),
-            get_hit_mask(resources.pipe[1]),
+            get_hit_mask(images.pipe[0]),
+            get_hit_mask(images.pipe[1]),
         )
 
         # hitmask for player
         HITMASKS['player'] = (
-            get_hit_mask(resources.player[0]),
-            get_hit_mask(resources.player[1]),
-            get_hit_mask(resources.player[2]),
+            get_hit_mask(images.player[0]),
+            get_hit_mask(images.player[1]),
+            get_hit_mask(images.player[2]),
         )
 
         movement_info = show_welcome_animation()
@@ -78,14 +78,14 @@ def show_welcome_animation():
     loop_iter = 0
 
     player_x = int(SCREEN_WIDTH * 0.2)
-    player_y = int((SCREEN_HEIGHT - resources.player[0].get_height()) / 2)
+    player_y = int((SCREEN_HEIGHT - images.player[0].get_height()) / 2)
 
-    message_x = int((SCREEN_WIDTH - resources.message.get_width()) / 2)
+    message_x = int((SCREEN_WIDTH - images.message.get_width()) / 2)
     message_y = int(SCREEN_HEIGHT * 0.12)
 
     base_x = 0
     # amount by which base can maximum shift to left
-    base_shift = resources.base.get_width() - resources.background.get_width()
+    base_shift = images.base.get_width() - images.background.get_width()
 
     # player shm for up-down motion on welcome screen
     player_shm_vals = {'val': 0, 'dir': 1}
@@ -112,10 +112,10 @@ def show_welcome_animation():
         player_shm(player_shm_vals)
 
         # draw sprites
-        SCREEN.blit(resources.background, (0, 0))
-        SCREEN.blit(resources.player[player_index], (player_x, player_y + player_shm_vals['val']))
-        SCREEN.blit(resources.message, (message_x, message_y))
-        SCREEN.blit(resources.base, (base_x, BASE_Y))
+        SCREEN.blit(images.background, (0, 0))
+        SCREEN.blit(images.player[player_index], (player_x, player_y + player_shm_vals['val']))
+        SCREEN.blit(images.message, (message_x, message_y))
+        SCREEN.blit(images.base, (base_x, BASE_Y))
 
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
@@ -128,7 +128,7 @@ def main_game(movement_info):
     player_x, state.bird.y = int(SCREEN_WIDTH * 0.2), movement_info['player_y']
 
     base_x = movement_info['base_x']
-    base_shift = resources.base.get_width() - resources.background.get_width()
+    base_shift = images.base.get_width() - images.background.get_width()
 
     # get 2 new pipes to add to upper_pipes lower_pipes list
     new_pipe1 = get_random_pipe()
@@ -166,7 +166,7 @@ def main_game(movement_info):
                 pygame.quit()
                 sys.exit()
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
-                if state.bird.get_y() > -2 * resources.player[0].get_height():
+                if state.bird.get_y() > -2 * images.player[0].get_height():
                     player_vel_y = player_flap_acc
                     player_flapped = True
                     SOUNDS['wing'].play()
@@ -193,9 +193,9 @@ def main_game(movement_info):
             }
 
         # check for score
-        player_mid_pos = state.bird.get_x() + resources.player[0].get_width() / 2
+        player_mid_pos = state.bird.get_x() + images.player[0].get_width() / 2
         for pipe in upper_pipes:
-            pipe_mid_pos = pipe['x'] + resources.pipe[0].get_width() / 2
+            pipe_mid_pos = pipe['x'] + images.pipe[0].get_width() / 2
             if pipe_mid_pos <= player_mid_pos < pipe_mid_pos + 4:
                 state.increase_score()
                 SOUNDS['point'].play()
@@ -219,7 +219,7 @@ def main_game(movement_info):
             # more rotation to cover the threshold (calculated in visible rotation)
             player_rot = 45
 
-        player_height = resources.player[player_index].get_height()
+        player_height = images.player[player_index].get_height()
         state.bird.y += min(player_vel_y, BASE_Y - state.bird.get_y() - player_height)
 
         # move pipes to left
@@ -234,18 +234,18 @@ def main_game(movement_info):
             lower_pipes.append(new_pipe[1])
 
         # remove first pipe if its out of the screen
-        if len(upper_pipes) > 0 and upper_pipes[0]['x'] < -resources.pipe[0].get_width():
+        if len(upper_pipes) > 0 and upper_pipes[0]['x'] < -images.pipe[0].get_width():
             upper_pipes.pop(0)
             lower_pipes.pop(0)
 
         # draw sprites
-        SCREEN.blit(resources.background, (0, 0))
+        SCREEN.blit(images.background, (0, 0))
 
         for u_pipe, l_pipe in zip(upper_pipes, lower_pipes):
-            SCREEN.blit(resources.pipe[0], (u_pipe['x'], u_pipe['y']))
-            SCREEN.blit(resources.pipe[1], (l_pipe['x'], l_pipe['y']))
+            SCREEN.blit(images.pipe[0], (u_pipe['x'], u_pipe['y']))
+            SCREEN.blit(images.pipe[1], (l_pipe['x'], l_pipe['y']))
 
-        SCREEN.blit(resources.base, (base_x, BASE_Y))
+        SCREEN.blit(images.base, (base_x, BASE_Y))
         # print score so player overlaps the score
         show_score(state.get_score())
 
@@ -254,7 +254,7 @@ def main_game(movement_info):
         if player_rot <= player_rot_thr:
             visible_rot = player_rot
 
-        player_surface = pygame.transform.rotate(resources.player[player_index], visible_rot)
+        player_surface = pygame.transform.rotate(images.player[player_index], visible_rot)
         SCREEN.blit(player_surface, (state.bird.get_x(), state.bird.get_y()))
 
         pygame.display.update()
@@ -266,7 +266,7 @@ def show_game_over_screen(crash_info):
     score = crash_info['score']
     player_x = SCREEN_WIDTH * 0.2
     player_y = crash_info['y']
-    player_height = resources.player[0].get_height()
+    player_height = images.player[0].get_height()
     player_vel_y = crash_info['player_vel_y']
     player_acc_y = 2
     player_rot = crash_info['player_rot']
@@ -304,18 +304,18 @@ def show_game_over_screen(crash_info):
                 player_rot -= player_vel_rot
 
         # draw sprites
-        SCREEN.blit(resources.background, (0, 0))
+        SCREEN.blit(images.background, (0, 0))
 
         for u_pipe, l_pipe in zip(upper_pipes, lower_pipes):
-            SCREEN.blit(resources.pipe[0], (u_pipe['x'], u_pipe['y']))
-            SCREEN.blit(resources.pipe[1], (l_pipe['x'], l_pipe['y']))
+            SCREEN.blit(images.pipe[0], (u_pipe['x'], u_pipe['y']))
+            SCREEN.blit(images.pipe[1], (l_pipe['x'], l_pipe['y']))
 
-        SCREEN.blit(resources.base, (basex, BASE_Y))
+        SCREEN.blit(images.base, (basex, BASE_Y))
         show_score(score)
 
-        player_surface = pygame.transform.rotate(resources.player[1], player_rot)
+        player_surface = pygame.transform.rotate(images.player[1], player_rot)
         SCREEN.blit(player_surface, (player_x, player_y))
-        SCREEN.blit(resources.game_over, (50, 180))
+        SCREEN.blit(images.game_over, (50, 180))
 
         FPS_CLOCK.tick(FPS)
         pygame.display.update()
@@ -337,7 +337,7 @@ def get_random_pipe():
     # y of gap between upper and lower pipe
     gap_y = random.randrange(0, int(BASE_Y * 0.6 - PIPE_GAP_SIZE))
     gap_y += int(BASE_Y * 0.2)
-    pipe_height = resources.pipe[0].get_height()
+    pipe_height = images.pipe[0].get_height()
     pipe_x = SCREEN_WIDTH + 10
 
     return [
@@ -352,20 +352,20 @@ def show_score(score):
     total_width = 0  # total width of all numbers to be printed
 
     for digit in score_digits:
-        total_width += resources.get_number(digit).get_width()
+        total_width += images.get_number(digit).get_width()
 
     x_offset = (SCREEN_WIDTH - total_width) / 2
 
     for digit in score_digits:
-        SCREEN.blit(resources.get_number(digit), (x_offset, SCREEN_HEIGHT * 0.1))
-        x_offset += resources.get_number(digit).get_width()
+        SCREEN.blit(images.get_number(digit), (x_offset, SCREEN_HEIGHT * 0.1))
+        x_offset += images.get_number(digit).get_width()
 
 
 def check_crash(player, upper_pipes, lower_pipes):
     """returns True if player collides with base or pipes."""
     pi = player['index']
-    player['w'] = resources.player[0].get_width()
-    player['h'] = resources.player[0].get_height()
+    player['w'] = images.player[0].get_width()
+    player['h'] = images.player[0].get_height()
 
     # if player crashes into ground
     if player['y'] + player['h'] >= BASE_Y - 1:
@@ -373,8 +373,8 @@ def check_crash(player, upper_pipes, lower_pipes):
     else:
 
         player_rect = pygame.Rect(player['x'], player['y'], player['w'], player['h'])
-        pipe_w = resources.pipe[0].get_width()
-        pipe_h = resources.pipe[0].get_height()
+        pipe_w = images.pipe[0].get_width()
+        pipe_h = images.pipe[0].get_height()
 
         for uPipe, lPipe in zip(upper_pipes, lower_pipes):
             # upper and lower pipe rects
