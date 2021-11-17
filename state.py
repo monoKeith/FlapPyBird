@@ -82,14 +82,14 @@ class Bird:
 
     # gets call every frame
     def run(self):
-        self.simple_reflex_agent()
+        self.stupid_reflex_agent()
         # Refresh
         self.refresh_location()
 
-    # A simple reflex agent to automatically flap
-    def simple_reflex_agent(self):
+    # A very very simple reflex agent to automatically flap
+    def stupid_reflex_agent(self):
         offset_allowance = 35
-        pipe_index = 1 if self.game_state.upper_pipes[0]['x'] < self.x - 35 else 0
+        pipe_index = 1 if self.game_state.upper_pipes[0]['x'] < self.x - 38 else 0
         y_upper = self.game_state.upper_pipes[pipe_index]['y'] + offset_allowance
         y_lower = self.game_state.lower_pipes[pipe_index]['y'] - offset_allowance
 
