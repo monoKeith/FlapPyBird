@@ -18,8 +18,6 @@ try:
 except NameError:
     xrange = range
 
-# Initialize Game state
-state = State()
 
 # Initialize pygame
 pygame.init()
@@ -31,6 +29,8 @@ SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 images = ImageResources()
 sounds = SoundResource()
 
+# Initialize Game state
+state = State(images, sounds)
 
 def get_hit_mask(image):
     """returns a hit-mask using an image's alpha."""
@@ -48,11 +48,13 @@ HIT_MASKS_PLAYER = [get_hit_mask(images.player[i]) for i in range(3)]
 
 def main():
     while True:
-        # select random resources
+        # Random UI resources
         images.random_background()
         images.random_player()
         images.random_pipe()
-
+        # Init
+        state.reset_score()
+        # Run game
         movement_info = show_welcome_animation()
         crash_info = main_game(movement_info)
         show_game_over_screen(crash_info)
@@ -138,27 +140,9 @@ def main_game(movement_info):
     dt = FPS_CLOCK.tick(FPS) / 1000
     pipe_vel_x = -128 * dt
 
-    # player velocity, max velocity, downward acceleration, acceleration on flap
-    player_vel_y = -9  # player's velocity along Y, default same as player_flapped
-    player_max_vel_y = 10  # max vel along Y, max descend speed
-    player_min_vel_y = -8  # min vel along Y, max ascend speed
-    player_acc_y = 1  # players downward acceleration
-    player_rot = 45  # player's rotation
-    player_vel_rot = 3  # angular speed
-    player_rot_thr = 20  # rotation threshold
-    player_flap_acc = -9  # players speed on flapping
-    player_flapped = False  # True when player flaps
-
     while True:
-        for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                pygame.quit()
-                sys.exit()
-            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
-                if state.bird.get_y() > -2 * images.player[0].get_height():
-                    player_vel_y = player_flap_acc
-                    player_flapped = True
-                    sounds.wing.play()
+
+        state.bird.run()
 
         # check for crash here
         crash_check = check_crash(
@@ -177,8 +161,8 @@ def main_game(movement_info):
                 'upper_pipes': upper_pipes,
                 'lower_pipes': lower_pipes,
                 'score': state.score,
-                'player_vel_y': player_vel_y,
-                'player_rot': player_rot
+                'player_vel_y': state.bird.get_velocity_y(),
+                'player_rot': state.bird.rotation
             }
 
         # check for score
@@ -195,21 +179,11 @@ def main_game(movement_info):
         loop_iter = (loop_iter + 1) % 30
         base_x = -((-base_x + 100) % base_shift)
 
-        # rotate the player
-        if player_rot > -90:
-            player_rot -= player_vel_rot
-
         # player's movement
-        if player_vel_y < player_max_vel_y and not player_flapped:
-            player_vel_y += player_acc_y
-        if player_flapped:
-            player_flapped = False
-
-            # more rotation to cover the threshold (calculated in visible rotation)
-            player_rot = 45
+        state.bird.refresh_location()
 
         player_height = images.player[player_index].get_height()
-        state.bird.y += min(player_vel_y, BASE_Y - state.bird.get_y() - player_height)
+        state.bird.y += min(state.bird.get_velocity_y(), BASE_Y - state.bird.get_y() - player_height)
 
         # move pipes to left
         for u_pipe, l_pipe in zip(upper_pipes, lower_pipes):
@@ -238,10 +212,8 @@ def main_game(movement_info):
         # print score so player overlaps the score
         show_score(state.get_score())
 
-        # Player rotation has a threshold
-        visible_rot = player_rot_thr
-        if player_rot <= player_rot_thr:
-            visible_rot = player_rot
+        # Limit rotation of bird within 20
+        visible_rot = min(state.bird.rotation, 20)
 
         player_surface = pygame.transform.rotate(images.player[player_index], visible_rot)
         SCREEN.blit(player_surface, (state.bird.get_x(), state.bird.get_y()))
@@ -310,15 +282,15 @@ def show_game_over_screen(crash_info):
         pygame.display.update()
 
 
-def player_shm(player_shm):
+def player_shm(player_shm_val):
     """oscillates the value of playerShm['val'] between 8 and -8"""
-    if abs(player_shm['val']) == 8:
-        player_shm['dir'] *= -1
+    if abs(player_shm_val['val']) == 8:
+        player_shm_val['dir'] *= -1
 
-    if player_shm['dir'] == 1:
-        player_shm['val'] += 1
+    if player_shm_val['dir'] == 1:
+        player_shm_val['val'] += 1
     else:
-        player_shm['val'] -= 1
+        player_shm_val['val'] -= 1
 
 
 def get_random_pipe():
