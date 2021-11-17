@@ -63,9 +63,8 @@ class Bird:
     def __init__(self, state: State):
         self.height_limit = -2 * state.images.player[0].get_height()
         self.game_state = state
-
         # Location related
-        self.x = 0
+        self.x = int(State.SCREEN_WIDTH * 0.2)
         self.y = 0
         self.rotation = 45
         self.velocity_y = -9
@@ -90,11 +89,12 @@ class Bird:
     # A simple reflex agent to automatically flap
     def simple_reflex_agent(self):
         offset_allowance = 35
-        y_upper = self.game_state.upper_pipes[0]['y'] + offset_allowance
-        y_lower = self.game_state.lower_pipes[0]['y'] - offset_allowance
+        pipe_index = 1 if self.game_state.upper_pipes[0]['x'] < self.x - 35 else 0
+        y_upper = self.game_state.upper_pipes[pipe_index]['y'] + offset_allowance
+        y_lower = self.game_state.lower_pipes[pipe_index]['y'] - offset_allowance
 
         if self.y >= y_lower:
-            self.log("Agent flap")
+            # self.log("Agent flap")
             self.flap()
 
 

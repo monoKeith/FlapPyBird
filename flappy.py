@@ -105,7 +105,7 @@ def main_game(movement_info):
     player_index = 0
     loop_iter = 0
     player_index_gen = movement_info['player_index_gen']
-    player_x, state.bird.y = int(State.SCREEN_WIDTH * 0.2), movement_info['player_y']
+    state.bird.y = movement_info['player_y']
 
     base_x = movement_info['base_x']
     base_shift = images.base.get_width() - images.background.get_width()
