@@ -1,7 +1,10 @@
+import sys
+
 import pygame
 import random
 
 PATH_PREFIX_IMG = "assets/sprites"
+PATH_PREFIX_SOUND = "assets/audio"
 
 # list of backgrounds
 BACKGROUNDS_LIST = (
@@ -85,3 +88,21 @@ class ImageResources:
             pygame.transform.flip(pygame.image.load(random_pipe_img).convert_alpha(), False, True),
             pygame.image.load(random_pipe_img).convert_alpha(),
         )
+
+
+class SoundResource:
+
+    def __init__(self):
+
+        ext = '.wav' if 'win' in sys.platform else '.ogg'
+
+        self.die = pygame.mixer.Sound('%s/die%s' % (PATH_PREFIX_SOUND, ext))
+
+        self.hit = pygame.mixer.Sound('%s/hit%s'% (PATH_PREFIX_SOUND, ext))
+
+        self.point = pygame.mixer.Sound('%s/point%s' % (PATH_PREFIX_SOUND, ext))
+
+        self.swoosh = pygame.mixer.Sound('%s/swoosh%s' % (PATH_PREFIX_SOUND, ext))
+
+        self.wing = pygame.mixer.Sound('%s/wing%s' % (PATH_PREFIX_SOUND, ext))
+

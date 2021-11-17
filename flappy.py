@@ -2,7 +2,7 @@ import pygame
 import random
 import sys
 from state import State
-from resources import ImageResources
+from resources import ImageResources, SoundResource
 from itertools import cycle
 from pygame.locals import *
 
@@ -12,9 +12,6 @@ SCREEN_WIDTH = 288
 SCREEN_HEIGHT = 512
 PIPE_GAP_SIZE = 100  # gap between upper and lower part of pipe
 BASE_Y = SCREEN_HEIGHT * 0.79
-
-# image, sound and hitmask  dicts
-SOUNDS, HITMASKS = {}, {}
 
 try:
     xrange
@@ -32,37 +29,29 @@ SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 # Initialize resources
 images = ImageResources()
+sounds = SoundResource()
+
+
+def get_hit_mask(image):
+    """returns a hit-mask using an image's alpha."""
+    mask = []
+    for x in xrange(image.get_width()):
+        mask.append([])
+        for y in xrange(image.get_height()):
+            mask[x].append(bool(image.get_at((x, y))[3]))
+    return mask
+
+
+HIT_MASKS_PIPE = [get_hit_mask(images.pipe[i]) for i in range(2)]
+HIT_MASKS_PLAYER = [get_hit_mask(images.player[i]) for i in range(3)]
 
 
 def main():
-
-    # sounds
-    sound_ext = '.wav' if 'win' in sys.platform else '.ogg'
-
-    SOUNDS['die'] = pygame.mixer.Sound('assets/audio/die' + sound_ext)
-    SOUNDS['hit'] = pygame.mixer.Sound('assets/audio/hit' + sound_ext)
-    SOUNDS['point'] = pygame.mixer.Sound('assets/audio/point' + sound_ext)
-    SOUNDS['swoosh'] = pygame.mixer.Sound('assets/audio/swoosh' + sound_ext)
-    SOUNDS['wing'] = pygame.mixer.Sound('assets/audio/wing' + sound_ext)
-
     while True:
         # select random resources
         images.random_background()
         images.random_player()
         images.random_pipe()
-
-        # hitmask for pipes
-        HITMASKS['pipe'] = (
-            get_hit_mask(images.pipe[0]),
-            get_hit_mask(images.pipe[1]),
-        )
-
-        # hitmask for player
-        HITMASKS['player'] = (
-            get_hit_mask(images.player[0]),
-            get_hit_mask(images.player[1]),
-            get_hit_mask(images.player[2]),
-        )
 
         movement_info = show_welcome_animation()
         crash_info = main_game(movement_info)
@@ -97,7 +86,7 @@ def show_welcome_animation():
                 sys.exit()
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
                 # make first flap sound and return values for mainGame
-                SOUNDS['wing'].play()
+                sounds.wing.play()
                 return {
                     'player_y': player_y + player_shm_vals['val'],
                     'base_x': base_x,
@@ -169,7 +158,7 @@ def main_game(movement_info):
                 if state.bird.get_y() > -2 * images.player[0].get_height():
                     player_vel_y = player_flap_acc
                     player_flapped = True
-                    SOUNDS['wing'].play()
+                    sounds.wing.play()
 
         # check for crash here
         crash_check = check_crash(
@@ -198,7 +187,7 @@ def main_game(movement_info):
             pipe_mid_pos = pipe['x'] + images.pipe[0].get_width() / 2
             if pipe_mid_pos <= player_mid_pos < pipe_mid_pos + 4:
                 state.increase_score()
-                SOUNDS['point'].play()
+                sounds.point.play()
 
         # player_index base_x change
         if (loop_iter + 1) % 3 == 0:
@@ -277,9 +266,9 @@ def show_game_over_screen(crash_info):
     upper_pipes, lower_pipes = crash_info['upper_pipes'], crash_info['lower_pipes']
 
     # play hit and die sounds
-    SOUNDS['hit'].play()
+    sounds.hit.play()
     if not crash_info['groundCrash']:
-        SOUNDS['die'].play()
+        sounds.die.play()
 
     while True:
         for event in pygame.event.get():
@@ -363,7 +352,7 @@ def show_score(score):
 
 def check_crash(player, upper_pipes, lower_pipes):
     """returns True if player collides with base or pipes."""
-    pi = player['index']
+    player_index = player['index']
     player['w'] = images.player[0].get_width()
     player['h'] = images.player[0].get_height()
 
@@ -381,10 +370,10 @@ def check_crash(player, upper_pipes, lower_pipes):
             u_pipe_rect = pygame.Rect(uPipe['x'], uPipe['y'], pipe_w, pipe_h)
             l_pipe_rect = pygame.Rect(lPipe['x'], lPipe['y'], pipe_w, pipe_h)
 
-            # player and upper/lower pipe hitmasks
-            p_hit_mask = HITMASKS['player'][pi]
-            u_hit_mask = HITMASKS['pipe'][0]
-            l_hit_mask = HITMASKS['pipe'][1]
+            # player and upper/lower pipe hit-masks
+            p_hit_mask = HIT_MASKS_PLAYER[player_index]
+            u_hit_mask = HIT_MASKS_PIPE[0]
+            l_hit_mask = HIT_MASKS_PIPE[1]
 
             # if bird collided with upipe or lpipe
             u_collide = pixel_collision(player_rect, u_pipe_rect, p_hit_mask, u_hit_mask)
@@ -396,7 +385,7 @@ def check_crash(player, upper_pipes, lower_pipes):
     return [False, False]
 
 
-def pixel_collision(rect1, rect2, hitmask1, hitmask2):
+def pixel_collision(rect1, rect2, hit_mask_a, hit_mask_b):
     """Checks if two objects collide and not just their rects"""
     rect = rect1.clip(rect2)
 
@@ -408,19 +397,9 @@ def pixel_collision(rect1, rect2, hitmask1, hitmask2):
 
     for x in xrange(rect.width):
         for y in xrange(rect.height):
-            if hitmask1[x1 + x][y1 + y] and hitmask2[x2 + x][y2 + y]:
+            if hit_mask_a[x1 + x][y1 + y] and hit_mask_b[x2 + x][y2 + y]:
                 return True
     return False
-
-
-def get_hit_mask(image):
-    """returns a hitmask using an image's alpha."""
-    mask = []
-    for x in xrange(image.get_width()):
-        mask.append([])
-        for y in xrange(image.get_height()):
-            mask[x].append(bool(image.get_at((x, y))[3]))
-    return mask
 
 
 if __name__ == '__main__':
