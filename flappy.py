@@ -18,7 +18,6 @@ try:
 except NameError:
     xrange = range
 
-
 # Initialize pygame
 pygame.init()
 pygame.display.set_caption('Flappy Bird')
@@ -31,6 +30,7 @@ sounds = SoundResource()
 
 # Initialize Game state
 state = State(images, sounds)
+
 
 def get_hit_mask(image):
     """returns a hit-mask using an image's alpha."""
@@ -48,12 +48,8 @@ HIT_MASKS_PLAYER = [get_hit_mask(images.player[i]) for i in range(3)]
 
 def main():
     while True:
-        # Random UI resources
-        images.random_background()
-        images.random_player()
-        images.random_pipe()
         # Init
-        state.reset_score()
+        state.initialize()
         # Run game
         movement_info = show_welcome_animation()
         crash_info = main_game(movement_info)
@@ -126,16 +122,11 @@ def main_game(movement_info):
     new_pipe2 = get_random_pipe()
 
     # list of upper pipes
-    upper_pipes = [
-        {'x': SCREEN_WIDTH + 200, 'y': new_pipe1[0]['y']},
-        {'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2), 'y': new_pipe2[0]['y']},
-    ]
-
-    # list of lowerpipe
-    lower_pipes = [
-        {'x': SCREEN_WIDTH + 200, 'y': new_pipe1[1]['y']},
-        {'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2), 'y': new_pipe2[1]['y']},
-    ]
+    state.upper_pipes.append({'x': SCREEN_WIDTH + 200, 'y': new_pipe1[0]['y']})
+    state.upper_pipes.append({'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2), 'y': new_pipe2[0]['y']})
+    # list of lower pipes
+    state.lower_pipes.append({'x': SCREEN_WIDTH + 200, 'y': new_pipe1[1]['y']})
+    state.lower_pipes.append({'x': SCREEN_WIDTH + 200 + (SCREEN_WIDTH / 2), 'y': new_pipe2[1]['y']})
 
     dt = FPS_CLOCK.tick(FPS) / 1000
     pipe_vel_x = -128 * dt
@@ -151,15 +142,15 @@ def main_game(movement_info):
                 'y': state.bird.get_y(),
                 'index': player_index
             },
-            upper_pipes, lower_pipes)
+            state.upper_pipes, state.lower_pipes)
 
         if crash_check[0]:
             return {
                 'y': state.bird.get_y(),
                 'groundCrash': crash_check[1],
                 'base_x': base_x,
-                'upper_pipes': upper_pipes,
-                'lower_pipes': lower_pipes,
+                'upper_pipes': state.upper_pipes,
+                'lower_pipes': state.lower_pipes,
                 'score': state.score,
                 'player_vel_y': state.bird.get_velocity_y(),
                 'player_rot': state.bird.rotation
@@ -167,7 +158,7 @@ def main_game(movement_info):
 
         # check for score
         player_mid_pos = state.bird.get_x() + images.player[0].get_width() / 2
-        for pipe in upper_pipes:
+        for pipe in state.upper_pipes:
             pipe_mid_pos = pipe['x'] + images.pipe[0].get_width() / 2
             if pipe_mid_pos <= player_mid_pos < pipe_mid_pos + 4:
                 state.increase_score()
@@ -182,39 +173,36 @@ def main_game(movement_info):
         player_height = images.player[player_index].get_height()
         state.bird.y += min(state.bird.get_velocity_y(), BASE_Y - state.bird.get_y() - player_height)
 
+        # Update Pipes
         # move pipes to left
-        for u_pipe, l_pipe in zip(upper_pipes, lower_pipes):
-            u_pipe['x'] += pipe_vel_x
-            l_pipe['x'] += pipe_vel_x
-
+        for prev_u_pipe, prev_l_pipe in zip(state.upper_pipes, state.lower_pipes):
+            prev_u_pipe['x'] += pipe_vel_x
+            prev_l_pipe['x'] += pipe_vel_x
         # add new pipe when first pipe is about to touch left of screen
-        if 3 > len(upper_pipes) > 0 and 0 < upper_pipes[0]['x'] < 5:
+        if 3 > len(state.upper_pipes) > 0 and 0 < state.upper_pipes[0]['x'] < 5:
             new_pipe = get_random_pipe()
-            upper_pipes.append(new_pipe[0])
-            lower_pipes.append(new_pipe[1])
-
+            state.upper_pipes.append(new_pipe[0])
+            state.lower_pipes.append(new_pipe[1])
         # remove first pipe if its out of the screen
-        if len(upper_pipes) > 0 and upper_pipes[0]['x'] < -images.pipe[0].get_width():
-            upper_pipes.pop(0)
-            lower_pipes.pop(0)
+        if len(state.upper_pipes) > 0 and state.upper_pipes[0]['x'] < -images.pipe[0].get_width():
+            state.upper_pipes.pop(0)
+            state.lower_pipes.pop(0)
 
-        # draw sprites
+        # Refresh screen
         SCREEN.blit(images.background, (0, 0))
-
-        for u_pipe, l_pipe in zip(upper_pipes, lower_pipes):
-            SCREEN.blit(images.pipe[0], (u_pipe['x'], u_pipe['y']))
-            SCREEN.blit(images.pipe[1], (l_pipe['x'], l_pipe['y']))
-
+        # Pipes
+        for prev_u_pipe, prev_l_pipe in zip(state.upper_pipes, state.lower_pipes):
+            SCREEN.blit(images.pipe[0], (prev_u_pipe['x'], prev_u_pipe['y']))
+            SCREEN.blit(images.pipe[1], (prev_l_pipe['x'], prev_l_pipe['y']))
+        # Base
         SCREEN.blit(images.base, (base_x, BASE_Y))
-        # print score so player overlaps the score
+        # Score
         show_score(state.get_score())
-
-        # Limit rotation of bird within 20
-        visible_rot = min(state.bird.rotation, 20)
-
-        player_surface = pygame.transform.rotate(images.player[player_index], visible_rot)
+        # Bird: limit rotation of bird within 20
+        visible_rotation = min(state.bird.rotation, 20)
+        player_surface = pygame.transform.rotate(images.player[player_index], visible_rotation)
         SCREEN.blit(player_surface, (state.bird.get_x(), state.bird.get_y()))
-
+        # Done
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
 

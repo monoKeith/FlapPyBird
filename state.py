@@ -64,13 +64,25 @@ class Bird:
 class State:
 
     def __init__(self, images: ImageResources, sounds: SoundResource):
-        self.score = 0
+        # Resources
         self.images = images
         self.sounds = sounds
+        # Vars
+        self.score = 0
+        self.upper_pipes = []
+        self.lower_pipes = []
+        self.initialize()
         self.bird = Bird(self)
 
-    def reset_score(self):
+    def initialize(self):
+        # Random UI theme
+        self.images.random_background()
+        self.images.random_player()
+        self.images.random_pipe()
+        # Reset vars
         self.score = 0
+        self.upper_pipes = []
+        self.lower_pipes = []
 
     def get_score(self):
         return self.score
