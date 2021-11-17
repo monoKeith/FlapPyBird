@@ -179,9 +179,6 @@ def main_game(movement_info):
         loop_iter = (loop_iter + 1) % 30
         base_x = -((-base_x + 100) % base_shift)
 
-        # player's movement
-        state.bird.refresh_location()
-
         player_height = images.player[player_index].get_height()
         state.bird.y += min(state.bird.get_velocity_y(), BASE_Y - state.bird.get_y() - player_height)
 

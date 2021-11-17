@@ -33,9 +33,12 @@ class Bird:
 
     # gets call every frame
     def run(self):
+        # Flap?
         for event in pygame.event.get():
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
                 self.flap()
+        # Refresh
+        self.refresh_location()
 
     # Flap
     def flap(self):
