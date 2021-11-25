@@ -6,11 +6,6 @@ from resources import ImageResources, SoundResource
 from itertools import cycle
 from pygame.locals import *
 
-try:
-    xrange
-except NameError:
-    xrange = range
-
 # Initialize pygame
 pygame.init()
 pygame.display.set_caption('Flappy Bird')
@@ -28,9 +23,9 @@ state = State(images, sounds)
 def get_hit_mask(image):
     """returns a hit-mask using an image's alpha."""
     mask = []
-    for x in xrange(image.get_width()):
+    for x in range(image.get_width()):
         mask.append([])
-        for y in xrange(image.get_height()):
+        for y in range(image.get_height()):
             mask[x].append(bool(image.get_at((x, y))[3]))
     return mask
 
@@ -103,9 +98,8 @@ def show_welcome_animation():
 
 def main_game(movement_info):
     player_index = 0
-    loop_iter = 0
+    frame_counter = 0
     player_index_gen = movement_info['player_index_gen']
-    state.bird.y = movement_info['player_y']
 
     base_x = movement_info['base_x']
     base_shift = images.base.get_width() - images.background.get_width()
@@ -117,47 +111,67 @@ def main_game(movement_info):
     dt = FPS_CLOCK.tick(State.FPS) / 1000
     pipe_vel_x = -128 * dt
 
+    birds = state.birds
+    for bird in birds:
+        bird.y = movement_info['player_y']
+
     while True:
+        # Only used for testing to control keyboard bird
+        keyboard_flap = False
 
-        state.bird.run()
+        for event in pygame.event.get():
+            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
+                keyboard_flap = True
 
-        # check for crash here
-        crash_check = check_crash(
-            {
-                'x': state.bird.get_x(),
-                'y': state.bird.get_y(),
-                'index': player_index
-            },
-            state.upper_pipes, state.lower_pipes)
+        # birds runs
+        for bird in birds:
 
-        if crash_check[0]:
-            return {
-                'y': state.bird.get_y(),
-                'groundCrash': crash_check[1],
-                'base_x': base_x,
-                'upper_pipes': state.upper_pipes,
-                'lower_pipes': state.lower_pipes,
-                'score': state.score,
-                'player_vel_y': state.bird.get_velocity_y(),
-                'player_rot': state.bird.rotation
-            }
+            if bird.dead:
+                continue
 
-        # check for score
-        player_mid_pos = state.bird.get_x() + images.player[0].get_width() / 2
-        for pipe in state.upper_pipes:
-            pipe_mid_pos = pipe['x'] + images.pipe[0].get_width() / 2
-            if pipe_mid_pos <= player_mid_pos < pipe_mid_pos + 4:
-                state.increase_score()
-                sounds.point.play()
+            if keyboard_flap:
+                bird.keyboard_flap = True
+            bird.run()
 
-        # player_index base_x change
-        if (loop_iter + 1) % 3 == 0:
+            # check for crash
+            crash_check = check_crash(
+                {
+                    'x': bird.get_x(),
+                    'y': bird.get_y(),
+                    'index': player_index
+                },
+                state.upper_pipes, state.lower_pipes)
+
+            if crash_check[0]:
+                bird.die()
+                if state.alive_bird_count <= 0:
+                    return {
+                        'y': bird.get_y(),
+                        'groundCrash': crash_check[1],
+                        'base_x': base_x,
+                        'upper_pipes': state.upper_pipes,
+                        'lower_pipes': state.lower_pipes,
+                        'score': state.score,
+                        'player_vel_y': bird.get_velocity_y(),
+                        'player_rot': bird.rotation
+                    }
+
+            # check for score
+            player_mid_pos = bird.get_x() + images.player[0].get_width() / 2
+            for pipe in state.upper_pipes:
+                pipe_mid_pos = pipe['x'] + images.pipe[0].get_width() / 2
+                if pipe_mid_pos <= player_mid_pos < pipe_mid_pos + 4:
+                    bird.increase_score()
+                    sounds.point.play()
+
+        # change bird appearance, so its wing flaps 3 times per second
+        if (frame_counter + 1) % 3 == 0:
             player_index = next(player_index_gen)
-        loop_iter = (loop_iter + 1) % 30
+        frame_counter = (frame_counter + 1) % 30
         base_x = -((-base_x + 100) % base_shift)
-
-        player_height = images.player[player_index].get_height()
-        state.bird.y += min(state.bird.get_velocity_y(), State.BASE_Y - state.bird.get_y() - player_height)
 
         # Update Pipes
         # move pipes to left
@@ -183,9 +197,12 @@ def main_game(movement_info):
         # Score
         show_score(state.get_score())
         # Bird: limit rotation of bird within 20
-        visible_rotation = min(state.bird.rotation, 20)
-        player_surface = pygame.transform.rotate(images.player[player_index], visible_rotation)
-        SCREEN.blit(player_surface, (state.bird.get_x(), state.bird.get_y()))
+        for bird in birds:
+            if bird.dead:
+                continue
+            visible_rotation = min(bird.rotation, 20)
+            player_surface = pygame.transform.rotate(images.player[player_index], visible_rotation)
+            SCREEN.blit(player_surface, (bird.get_x(), bird.get_y()))
         # Done
         pygame.display.update()
         FPS_CLOCK.tick(State.FPS)
@@ -322,8 +339,8 @@ def pixel_collision(rect1, rect2, hit_mask_a, hit_mask_b):
     x1, y1 = rect.x - rect1.x, rect.y - rect1.y
     x2, y2 = rect.x - rect2.x, rect.y - rect2.y
 
-    for x in xrange(rect.width):
-        for y in xrange(rect.height):
+    for x in range(rect.width):
+        for y in range(rect.height):
             if hit_mask_a[x1 + x][y1 + y] and hit_mask_b[x2 + x][y2 + y]:
                 return True
     return False
