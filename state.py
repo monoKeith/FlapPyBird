@@ -1,9 +1,7 @@
 import random
 from enum import Enum
 
-import pygame
 from resources import ImageResources, SoundResource
-from pygame.locals import *
 
 
 class State:
@@ -13,7 +11,6 @@ class State:
     SCREEN_HEIGHT = 512
     PIPE_GAP_SIZE = 100  # gap between upper and lower part of pipe
     BASE_Y = SCREEN_HEIGHT * 0.79
-    BIRD_COUNT = 2
 
     def __init__(self, images: ImageResources, sounds: SoundResource):
         # Resources
@@ -23,15 +20,10 @@ class State:
         self.score = 0
         self.upper_pipes = []
         self.lower_pipes = []
-        self.initialize()
         # Constants
         self.pipe_height = images.pipe[0].get_height()
-        # Bird
-        self.birds = [Bird(self, BirdParam(BirdParam.Type.SELF)), Bird(self, BirdParam(BirdParam.Type.KEYBOARD))]
-        self.alive_bird_count = State.BIRD_COUNT
 
-
-    def initialize(self):
+    def initialize(self, bird_count):
         # Random UI theme
         self.images.random_background()
         self.images.random_player()
@@ -40,6 +32,10 @@ class State:
         self.score = 0
         self.upper_pipes = []
         self.lower_pipes = []
+        # Bird
+        print("Bird Count:", bird_count)
+        self.birds = [Bird(self) for _ in range(bird_count)]
+        self.alive_bird_count = bird_count
 
     def get_score(self):
         return self.score
@@ -61,16 +57,6 @@ class State:
         self.lower_pipes.append({'x': pipe_x, 'y': gap_y + State.PIPE_GAP_SIZE})
 
 
-class BirdParam:
-
-    class Type(Enum):
-        KEYBOARD = 1
-        SELF = 2
-
-    def __init__(self, type: Type):
-        self.type = type
-
-
 class Bird:
     # down is positive, up is negative
     FLAP_ACC = -9
@@ -79,10 +65,9 @@ class Bird:
     ROTATION_SPEED = 3
     HEIGHT = 24
 
-    def __init__(self, state: State, param: BirdParam):
+    def __init__(self, state: State):
         self.height_limit = -2 * state.images.player[0].get_height()
         self.game_state = state
-        self.param = param
         # Location related
         self.x = int(State.SCREEN_WIDTH * 0.2)
         self.y = 0
@@ -108,14 +93,28 @@ class Bird:
     def is_dead(self):
         return self.dead
 
+    def set_net(self, net):
+        self.net = net
+
     # gets call every frame
     def run(self):
-        if self.param.type is BirdParam.Type.SELF:
-            self.stupid_reflex_agent()
-        elif self.param.type is BirdParam.Type.KEYBOARD:
-            self.keyboard_bird()
+        # Flap?
+        # self.keyboard_bird()
+        self.intelligent_agent()
         # Refresh
         self.refresh_location()
+
+    def intelligent_agent(self):
+        pipe_index = 1 if self.game_state.upper_pipes[0]['x'] < self.x - 40 else 0
+        y_upper = self.game_state.upper_pipes[pipe_index]['y']
+        y_lower = self.game_state.lower_pipes[pipe_index]['y']
+
+        # send bird location, top pipe location and bottom pipe location
+        # and determine from network whether to jump or not
+        output = self.net.activate((self.y, abs(self.y - y_upper), abs(self.y - y_lower)))
+
+        if output[0] > 0.5:
+            self.flap()
 
     # A very very simple reflex agent to automatically flap
     def stupid_reflex_agent(self):
@@ -136,14 +135,13 @@ class Bird:
 
     # When a bird hit the pipe, this function will be called
     def die(self):
-        print("this bird died")
         self.dead = True
         self.game_state.a_bird_die()
 
     # Flap
     def flap(self):
         if self.y > self.height_limit:
-            self.game_state.sounds.wing.play()
+            # self.game_state.sounds.wing.play()
             self.velocity_y = Bird.FLAP_ACC
             self.flapped = True
 

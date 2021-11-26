@@ -4,6 +4,7 @@ from state import State
 from resources import ImageResources, SoundResource
 from itertools import cycle
 from pygame.locals import *
+from control import NeatControl
 
 # Initialize pygame
 pygame.init()
@@ -33,15 +34,6 @@ HIT_MASKS_PIPE = [get_hit_mask(images.pipe[i]) for i in range(2)]
 HIT_MASKS_PLAYER = [get_hit_mask(images.player[i]) for i in range(3)]
 
 PLAYER_INDEX_CYCLE = cycle([0, 1, 2, 1])
-
-
-def main():
-    while True:
-        # Init
-        state.initialize()
-        # Run game
-        show_welcome_animation()
-        main_game()
 
 
 def show_welcome_animation():
@@ -106,11 +98,12 @@ def main_game():
     dt = FPS_CLOCK.tick(State.FPS) / 1000
     pipe_vel_x = -128 * dt
 
-    birds = state.birds
-    for bird in birds:
+    for bird in state.birds:
         bird.y = bird_initial_y
 
     while True:
+        control.frame_begin()
+
         # Only used for testing to control keyboard bird
         keyboard_flap = False
 
@@ -122,7 +115,7 @@ def main_game():
                 keyboard_flap = True
 
         # birds runs
-        for bird in birds:
+        for bird in state.birds:
 
             if bird.dead:
                 continue
@@ -151,7 +144,7 @@ def main_game():
                 pipe_mid_pos = pipe['x'] + images.pipe[0].get_width() / 2
                 if pipe_mid_pos <= player_mid_pos < pipe_mid_pos + 4:
                     bird.increase_score()
-                    sounds.point.play()
+                    # sounds.point.play()
 
         # change bird appearance, so its wing flaps 3 times per second
         if (frame_counter + 1) % 3 == 0:
@@ -183,7 +176,7 @@ def main_game():
         # Score
         show_score(state.get_score())
         # Bird: limit rotation of bird within 20
-        for bird in birds:
+        for bird in state.birds:
             if bird.dead:
                 continue
             visible_rotation = min(bird.rotation, 20)
@@ -191,6 +184,7 @@ def main_game():
             SCREEN.blit(player_surface, (bird.get_x(), bird.get_y()))
         # Done
         pygame.display.update()
+        control.frame_finish()
         FPS_CLOCK.tick(State.FPS)
 
 
@@ -270,6 +264,17 @@ def pixel_collision(rect1, rect2, hit_mask_a, hit_mask_b):
             if hit_mask_a[x1 + x][y1 + y] and hit_mask_b[x2 + x][y2 + y]:
                 return True
     return False
+
+
+# Initialize neat
+control = NeatControl(state, main_game)
+
+
+def main():
+    # Start
+    show_welcome_animation()
+
+    control.run()
 
 
 if __name__ == '__main__':
