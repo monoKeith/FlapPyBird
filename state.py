@@ -17,6 +17,7 @@ class State:
         self.images = images
         self.sounds = sounds
         # Vars
+        self.last_score = 0
         self.score = 0
         self.upper_pipes = []
         self.lower_pipes = []
@@ -29,6 +30,7 @@ class State:
         self.images.random_player()
         self.images.random_pipe()
         # Reset vars
+        self.last_score = 0
         self.score = 0
         self.upper_pipes = []
         self.lower_pipes = []
@@ -42,6 +44,13 @@ class State:
 
     def record_score(self, score):
         self.score = max(self.score, score)
+
+    def is_new_record(self):
+        if self.last_score == self.score:
+            return False
+        else:
+            self.last_score = self.score
+            return True
 
     def a_bird_die(self):
         self.alive_bird_count -= 1
