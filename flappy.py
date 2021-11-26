@@ -1,5 +1,4 @@
 import pygame
-import random
 import sys
 from state import State
 from resources import ImageResources, SoundResource
@@ -33,22 +32,22 @@ def get_hit_mask(image):
 HIT_MASKS_PIPE = [get_hit_mask(images.pipe[i]) for i in range(2)]
 HIT_MASKS_PLAYER = [get_hit_mask(images.player[i]) for i in range(3)]
 
+PLAYER_INDEX_CYCLE = cycle([0, 1, 2, 1])
+
 
 def main():
     while True:
         # Init
         state.initialize()
         # Run game
-        movement_info = show_welcome_animation()
-        crash_info = main_game(movement_info)
-        show_game_over_screen(crash_info)
+        show_welcome_animation()
+        main_game()
 
 
 def show_welcome_animation():
     """Shows welcome screen animation of flappy bird"""
     # index of player to blit on screen
     player_index = 0
-    player_index_gen = cycle([0, 1, 2, 1])
     # iterator used to change player_index after every 5th iteration
     loop_iter = 0
 
@@ -73,15 +72,11 @@ def show_welcome_animation():
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
                 # make first flap sound and return values for mainGame
                 sounds.wing.play()
-                return {
-                    'player_y': player_y + player_shm_vals['val'],
-                    'base_x': base_x,
-                    'player_index_gen': player_index_gen,
-                }
+                return
 
         # adjust playery, player_index, base_x
         if (loop_iter + 1) % 5 == 0:
-            player_index = next(player_index_gen)
+            player_index = next(PLAYER_INDEX_CYCLE)
         loop_iter = (loop_iter + 1) % 30
         base_x = -((-base_x + 4) % base_shift)
         player_shm(player_shm_vals)
@@ -96,12 +91,12 @@ def show_welcome_animation():
         FPS_CLOCK.tick(State.FPS)
 
 
-def main_game(movement_info):
+def main_game():
     player_index = 0
     frame_counter = 0
-    player_index_gen = movement_info['player_index_gen']
+    bird_initial_y = int((State.SCREEN_HEIGHT - images.player[0].get_height()) / 2)
 
-    base_x = movement_info['base_x']
+    base_x = 0
     base_shift = images.base.get_width() - images.background.get_width()
 
     # add 2 random pipes
@@ -113,7 +108,7 @@ def main_game(movement_info):
 
     birds = state.birds
     for bird in birds:
-        bird.y = movement_info['player_y']
+        bird.y = bird_initial_y
 
     while True:
         # Only used for testing to control keyboard bird
@@ -148,16 +143,7 @@ def main_game(movement_info):
             if crash_check[0]:
                 bird.die()
                 if state.alive_bird_count <= 0:
-                    return {
-                        'y': bird.get_y(),
-                        'groundCrash': crash_check[1],
-                        'base_x': base_x,
-                        'upper_pipes': state.upper_pipes,
-                        'lower_pipes': state.lower_pipes,
-                        'score': state.score,
-                        'player_vel_y': bird.get_velocity_y(),
-                        'player_rot': bird.rotation
-                    }
+                    return
 
             # check for score
             player_mid_pos = bird.get_x() + images.player[0].get_width() / 2
@@ -169,7 +155,7 @@ def main_game(movement_info):
 
         # change bird appearance, so its wing flaps 3 times per second
         if (frame_counter + 1) % 3 == 0:
-            player_index = next(player_index_gen)
+            player_index = next(PLAYER_INDEX_CYCLE)
         frame_counter = (frame_counter + 1) % 30
         base_x = -((-base_x + 100) % base_shift)
 
@@ -206,66 +192,6 @@ def main_game(movement_info):
         # Done
         pygame.display.update()
         FPS_CLOCK.tick(State.FPS)
-
-
-def show_game_over_screen(crash_info):
-    """crashes the player down and shows gameover image"""
-    score = crash_info['score']
-    player_x = State.SCREEN_WIDTH * 0.2
-    player_y = crash_info['y']
-    player_height = images.player[0].get_height()
-    player_vel_y = crash_info['player_vel_y']
-    player_acc_y = 2
-    player_rot = crash_info['player_rot']
-    player_vel_rot = 7
-
-    basex = crash_info['base_x']
-
-    upper_pipes, lower_pipes = crash_info['upper_pipes'], crash_info['lower_pipes']
-
-    # play hit and die sounds
-    sounds.hit.play()
-    if not crash_info['groundCrash']:
-        sounds.die.play()
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                pygame.quit()
-                sys.exit()
-            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
-                if player_y + player_height >= State.BASE_Y - 1:
-                    return
-
-        # player y shift
-        if player_y + player_height < State.BASE_Y - 1:
-            player_y += min(player_vel_y, State.BASE_Y - player_y - player_height)
-
-        # player velocity change
-        if player_vel_y < 15:
-            player_vel_y += player_acc_y
-
-        # rotate only when it's a pipe crash
-        if not crash_info['groundCrash']:
-            if player_rot > -90:
-                player_rot -= player_vel_rot
-
-        # draw sprites
-        SCREEN.blit(images.background, (0, 0))
-
-        for u_pipe, l_pipe in zip(upper_pipes, lower_pipes):
-            SCREEN.blit(images.pipe[0], (u_pipe['x'], u_pipe['y']))
-            SCREEN.blit(images.pipe[1], (l_pipe['x'], l_pipe['y']))
-
-        SCREEN.blit(images.base, (basex, State.BASE_Y))
-        show_score(score)
-
-        player_surface = pygame.transform.rotate(images.player[1], player_rot)
-        SCREEN.blit(player_surface, (player_x, player_y))
-        SCREEN.blit(images.game_over, (50, 180))
-
-        FPS_CLOCK.tick(State.FPS)
-        pygame.display.update()
 
 
 def player_shm(player_shm_val):
