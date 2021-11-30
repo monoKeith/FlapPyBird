@@ -120,8 +120,8 @@ class Bird:
 
         # send bird location, top pipe location and bottom pipe location
         # and determine from network whether to jump or not
-        output = self.net.activate((self.y, abs(self.y - y_upper), abs(self.y - y_lower)))
-
+        #output = self.net.activate((self.y, abs(self.y - y_upper), abs(self.y - y_lower)))
+        output = self.net.activate((self.y, y_upper, y_lower))
         if output[0] > 0.5:
             self.flap()
 

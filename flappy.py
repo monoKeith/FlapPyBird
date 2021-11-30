@@ -274,7 +274,9 @@ def main():
     # Start
     show_welcome_animation()
 
-    control.run()
+    # replay=False: training mode
+    # replay=True: testing mode
+    control.run(replay=False)
 
 
 if __name__ == '__main__':
