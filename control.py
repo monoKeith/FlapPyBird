@@ -58,16 +58,16 @@ class NeatControl:
         self.state.initialize(len(genomes))
 
         self.nets = []
-        self.ge = []
+        self.genomes = []
         # For each frame the bird survive, fitness + 0.1, for each pipe the bird survive, fitness + 5
         self.current_fitness = 0
         for genome_id, genome in genomes:
             genome.fitness = 0  # start with fitness level of 0
             net = neat.nn.FeedForwardNetwork.create(genome, config)
             self.nets.append(net)
-            self.ge.append(genome)
+            self.genomes.append(genome)
 
-        # Run one generation (all birds die)
+        # Run one generation (until all birds die)
         self.game_iteration()
 
     def frame_begin(self):
@@ -76,16 +76,16 @@ class NeatControl:
             self.state.birds[index].set_net(net)
 
     def frame_finish(self):
-        # When a bird die, remove corresponding data
+        # When a bird die, remove corresponding net and genome from lists
         for bird in self.state.birds:
             if bird.dead:
                 index = self.state.birds.index(bird)
                 self.nets.pop(index)
-                self.ge.pop(index)
+                self.genomes.pop(index)
                 self.state.birds.pop(index)
-        # Update fitness score
+        # Update fitness score for survivors
         self.current_fitness += 0.1
         if self.state.is_new_record():
             self.current_fitness += 5
-        for genome in self.ge:
+        for genome in self.genomes:
             genome.fitness = self.current_fitness

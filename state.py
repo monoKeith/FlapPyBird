@@ -118,7 +118,7 @@ class Bird:
         y_upper = self.game_state.upper_pipes[pipe_index]['y']
         y_lower = self.game_state.lower_pipes[pipe_index]['y']
 
-        # send bird location, top pipe location and bottom pipe location
+        # send bird location, top and bottom location of closest 2 pipes
         # and determine from network whether to jump or not
         #output = self.net.activate((self.y, abs(self.y - y_upper), abs(self.y - y_lower)))
         output = self.net.activate((self.y, y_upper, y_lower))
