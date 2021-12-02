@@ -152,6 +152,7 @@ class Bird:
     def die(self):
         self.dead = True
         self.game_state.a_bird_die()
+        self.game_state.sounds.die.play()
 
     # Flap
     def flap(self):
