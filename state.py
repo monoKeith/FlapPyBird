@@ -61,7 +61,7 @@ class State:
         gap_y = random.randrange(0, int(State.BASE_Y * 0.6 - State.PIPE_GAP_SIZE))
         gap_y += int(State.BASE_Y * 0.2)
 
-        pipe_x = (State.SCREEN_WIDTH + 200) if x == 0 else x
+        pipe_x = (State.SCREEN_WIDTH + 10) if x == 0 else x
         self.upper_pipes.append({'x': pipe_x, 'y': gap_y - self.pipe_height})
         self.lower_pipes.append({'x': pipe_x, 'y': gap_y + State.PIPE_GAP_SIZE})
 

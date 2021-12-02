@@ -284,7 +284,7 @@ def main():
         control.run(replay=False)
     else:
         # Keyboard / Simple
-        state.initialize(1, "keyboard")
+        state.initialize(1, "simple")
         main_game(run_control=False)
 
 
