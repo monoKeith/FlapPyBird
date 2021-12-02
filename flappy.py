@@ -83,7 +83,8 @@ def show_welcome_animation():
         FPS_CLOCK.tick(State.FPS)
 
 
-def main_game():
+def main_game(run_control=True):
+
     player_index = 0
     frame_counter = 0
     bird_initial_y = int((State.SCREEN_HEIGHT - images.player[0].get_height()) / 2)
@@ -102,11 +103,11 @@ def main_game():
         bird.y = bird_initial_y
 
     while True:
-        control.frame_begin()
+        if run_control:
+            control.frame_begin()
 
         # Only used for testing to control keyboard bird
         keyboard_flap = False
-
         for event in pygame.event.get():
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
@@ -184,7 +185,8 @@ def main_game():
             SCREEN.blit(player_surface, (bird.get_x(), bird.get_y()))
         # Done
         pygame.display.update()
-        control.frame_finish()
+        if run_control:
+            control.frame_finish()
         FPS_CLOCK.tick(State.FPS)
 
 
@@ -274,9 +276,16 @@ def main():
     # Start
     show_welcome_animation()
 
-    # replay=False: training mode
-    # replay=True: testing mode
-    control.run(replay=False)
+    run_neat = True
+
+    if run_neat:
+        # replay=False: training mode
+        # replay=True: testing mode
+        control.run(replay=False)
+    else:
+        # Keyboard / Simple
+        state.initialize(1, "keyboard")
+        main_game(run_control=False)
 
 
 if __name__ == '__main__':

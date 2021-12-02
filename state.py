@@ -24,7 +24,7 @@ class State:
         # Constants
         self.pipe_height = images.pipe[0].get_height()
 
-    def initialize(self, bird_count):
+    def initialize(self, bird_count, agent_type):
         # Random UI theme
         self.images.random_background()
         self.images.random_player()
@@ -36,7 +36,7 @@ class State:
         self.lower_pipes = []
         # Bird
         print("Bird Count:", bird_count)
-        self.birds = [Bird(self) for _ in range(bird_count)]
+        self.birds = [Bird(self, agent_type) for _ in range(bird_count)]
         self.alive_bird_count = bird_count
 
     def get_score(self):
@@ -61,7 +61,7 @@ class State:
         gap_y = random.randrange(0, int(State.BASE_Y * 0.6 - State.PIPE_GAP_SIZE))
         gap_y += int(State.BASE_Y * 0.2)
 
-        pipe_x = (State.SCREEN_WIDTH + 10) if x == 0 else x
+        pipe_x = (State.SCREEN_WIDTH + 200) if x == 0 else x
         self.upper_pipes.append({'x': pipe_x, 'y': gap_y - self.pipe_height})
         self.lower_pipes.append({'x': pipe_x, 'y': gap_y + State.PIPE_GAP_SIZE})
 
@@ -74,7 +74,7 @@ class Bird:
     ROTATION_SPEED = 3
     HEIGHT = 24
 
-    def __init__(self, state: State):
+    def __init__(self, state: State, agent_type):
         self.height_limit = -2 * state.images.player[0].get_height()
         self.game_state = state
         # Location related
@@ -89,6 +89,14 @@ class Bird:
         self.dead = False
         # Keyboard flap parameter for testing only!
         self.keyboard_flap = False
+        # Set Agent type
+        if "simple" in agent_type:
+            self.agent = self.stupid_reflex_agent
+        elif "intelligent" in agent_type:
+            self.agent = self.intelligent_agent
+        else:
+            self.agent = self.keyboard_bird
+
 
     def get_x(self):
         return self.x
@@ -108,8 +116,7 @@ class Bird:
     # gets call every frame
     def run(self):
         # Flap?
-        # self.keyboard_bird()
-        self.intelligent_agent()
+        self.agent()
         # Refresh
         self.refresh_location()
 
@@ -120,7 +127,6 @@ class Bird:
 
         # send bird location, top and bottom location of closest 2 pipes
         # and determine from network whether to jump or not
-        #output = self.net.activate((self.y, abs(self.y - y_upper), abs(self.y - y_lower)))
         output = self.net.activate((self.y, y_upper, y_lower))
         if output[0] > 0.5:
             self.flap()

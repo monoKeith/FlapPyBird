@@ -55,7 +55,7 @@ class NeatControl:
 
     def eval_genomes(self, genomes, config):
         # Init
-        self.state.initialize(len(genomes))
+        self.state.initialize(len(genomes), "intelligent")
 
         self.nets = []
         self.genomes = []
