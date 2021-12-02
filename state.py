@@ -121,7 +121,7 @@ class Bird:
         self.refresh_location()
 
     def intelligent_agent(self):
-        pipe_index = 1 if self.game_state.upper_pipes[0]['x'] < self.x - 40 else 0
+        pipe_index = 1 if self.game_state.upper_pipes[0]['x'] < self.x - 52 else 0
         y_upper = self.game_state.upper_pipes[pipe_index]['y']
         y_lower = self.game_state.lower_pipes[pipe_index]['y']
 
@@ -134,7 +134,7 @@ class Bird:
     # A very very simple reflex agent to automatically flap
     def stupid_reflex_agent(self):
         offset_allowance = 35
-        pipe_index = 1 if self.game_state.upper_pipes[0]['x'] < self.x - 40 else 0
+        pipe_index = 1 if self.game_state.upper_pipes[0]['x'] < self.x - 52 else 0
         y_upper = self.game_state.upper_pipes[pipe_index]['y'] + offset_allowance
         y_lower = self.game_state.lower_pipes[pipe_index]['y'] - offset_allowance
 

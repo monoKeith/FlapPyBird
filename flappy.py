@@ -115,6 +115,7 @@ def main_game(run_control=True):
             if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
                 keyboard_flap = True
 
+        play_score_sound = False
         # birds runs
         for bird in state.birds:
 
@@ -145,7 +146,10 @@ def main_game(run_control=True):
                 pipe_mid_pos = pipe['x'] + images.pipe[0].get_width() / 2
                 if pipe_mid_pos <= player_mid_pos < pipe_mid_pos + 4:
                     bird.increase_score()
-                    # sounds.point.play()
+                    play_score_sound = True
+                    
+        if play_score_sound:
+            sounds.point.play()
 
         # change bird appearance, so its wing flaps 3 times per second
         if (frame_counter + 1) % 3 == 0:
